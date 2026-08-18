@@ -17,4 +17,4 @@ export declare const Config: z<Config>;
  * self-hosted route was missing, so the native Model/Effort selector and
  * session persistence continue to work unchanged.
  */
-export declare function apply(ctx: Context, config: Config): Promise<void>;
+export declare function apply(ctx: Context, config: Config): void;
