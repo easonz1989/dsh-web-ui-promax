@@ -1,15 +1,27 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
+import type {} from '@deepseek-ai/dsh-client-connection'
 import { promoteProvider, type Effort, type ProviderProfile } from './profile.ts'
 
 export { promoteProvider, REASONING_COMPAT, REASONING_EFFORTS } from './profile.ts'
 export type { Effort, ModelProfile, ProviderProfile, PromotedProvider } from './profile.ts'
 
 export const name = 'dsh-web-ui-promax'
-export const inject = ['settings']
+export const inject = ['settings', 'connection']
 
 const PI_AI_NAMESPACE = settingsNamespace('llm-pi-ai')
+export const UI_SETTINGS_NAMESPACE = settingsNamespace('web-ui-promax')
+export const UI_EFFECTS = ['ios'] as const
+export type UiEffect = (typeof UI_EFFECTS)[number]
+
+export interface UiSettings {
+  uiEffect: UiEffect
+}
+
+export const UI_SETTINGS_SCHEMA: z<UiSettings> = z.object({
+  uiEffect: z.union(UI_EFFECTS).default('ios'),
+})
 
 export interface Config {
   provider?: string
@@ -34,6 +46,29 @@ interface PiAiSettings {
  * session persistence continue to work unchanged.
  */
 export function apply(ctx: Context, config: Config): void {
+  const uiSettings = ctx.settings.register<UiSettings>(UI_SETTINGS_NAMESPACE, UI_SETTINGS_SCHEMA, {
+    base: { uiEffect: 'ios' },
+  })
+  ctx.connection.rpc.handle(
+    '/web-ui-promax',
+    async (endpoint, payload): Promise<RpcResult<{ uiEffect: UiEffect }>> => {
+      try {
+        if (endpoint === 'get-ui-effect') return ok({ uiEffect: uiSettings.get().uiEffect })
+        if (endpoint === 'set-ui-effect') {
+          const value = (payload as Record<string, unknown> | undefined)?.uiEffect
+          if (!isUiEffect(value)) return fail('uiEffect must be ios')
+          await uiSettings.update({ uiEffect: value })
+          return ok({ uiEffect: uiSettings.get().uiEffect })
+        }
+        return fail(`unknown endpoint: ${endpoint}`)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        return fail(message.slice(0, 500))
+      }
+    },
+    { authority: 'trusted-host' },
+  )
+
   const provider = nonBlank(config.provider, 'provider')
   const model = nonBlank(config.model, 'model')
   const defaultEffort = config.defaultEffort ?? 'high'
@@ -91,6 +126,26 @@ export function apply(ctx: Context, config: Config): void {
     ctx.logger.error(error)
   }
   schedule(0)
+}
+
+interface RpcError {
+  code: 'internal'
+  message: string
+  details: Record<string, never>
+}
+
+type RpcResult<T> = { ok: true; value: T } | { ok: false; error: RpcError }
+
+function ok<T>(value: T): RpcResult<T> {
+  return { ok: true, value }
+}
+
+function fail(message: string): RpcResult<never> {
+  return { ok: false, error: { code: 'internal', message, details: {} } }
+}
+
+export function isUiEffect(value: unknown): value is UiEffect {
+  return value === 'ios'
 }
 
 function nonBlank(value: string | undefined, field: string): string {

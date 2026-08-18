@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import * as plugin from '../src/index.ts'
-import { currentReasoning } from '../src/client/index.tsx'
+import { applyUiEffect, currentReasoning, isUiEffect as isClientUiEffect } from '../src/client/index.tsx'
 
 describe('dsh-web-ui-promax profile', () => {
   it('keeps the Cordis namespace and settings injection', () => {
     expect('default' in plugin).toBe(false)
-    expect(plugin.inject).toEqual(['settings'])
+    expect(plugin.inject).toEqual(['settings', 'connection'])
     expect(typeof plugin.apply).toBe('function')
   })
 
@@ -33,6 +33,22 @@ describe('dsh-web-ui-promax profile', () => {
     const once = plugin.promoteProvider({ models: [{ id: 'm' }] }, 'm', 'high')
     expect(plugin.promoteProvider(once.profile, 'm', 'high').changed).toBe(false)
     expect(() => plugin.promoteProvider({ models: [{ id: 'other' }] }, 'm', 'high')).toThrow(/not declared/u)
+  })
+})
+
+describe('UI effects', () => {
+  it('exposes the combined Swift Glass and Liquid Glass effect as iOS', () => {
+    expect(plugin.UI_EFFECTS).toEqual(['ios'])
+    expect(plugin.isUiEffect('ios')).toBe(true)
+    expect(plugin.isUiEffect('swift-glass')).toBe(false)
+    expect(plugin.isUiEffect('liquid-glass')).toBe(false)
+    expect(isClientUiEffect('ios')).toBe(true)
+  })
+
+  it('projects the selected effect through one root data attribute', () => {
+    const root = { dataset: {} as DOMStringMap }
+    applyUiEffect(root, 'ios')
+    expect(root.dataset['dshUiEffect']).toBe('ios')
   })
 })
 

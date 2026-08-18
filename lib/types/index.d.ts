@@ -5,6 +5,13 @@ export { promoteProvider, REASONING_COMPAT, REASONING_EFFORTS } from './profile.
 export type { Effort, ModelProfile, ProviderProfile, PromotedProvider } from './profile.ts';
 export declare const name = "dsh-web-ui-promax";
 export declare const inject: string[];
+export declare const UI_SETTINGS_NAMESPACE: import("@deepseek-ai/dsh-settings").SettingsNamespace;
+export declare const UI_EFFECTS: readonly ["ios"];
+export type UiEffect = (typeof UI_EFFECTS)[number];
+export interface UiSettings {
+    uiEffect: UiEffect;
+}
+export declare const UI_SETTINGS_SCHEMA: z<UiSettings>;
 export interface Config {
     provider?: string;
     model?: string;
@@ -18,3 +25,4 @@ export declare const Config: z<Config>;
  * session persistence continue to work unchanged.
  */
 export declare function apply(ctx: Context, config: Config): void;
+export declare function isUiEffect(value: unknown): value is UiEffect;

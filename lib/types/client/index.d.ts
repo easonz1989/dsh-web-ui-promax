@@ -1,4 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
+export declare const UI_EFFECTS: readonly ["ios"];
+export type UiEffect = (typeof UI_EFFECTS)[number];
 type ModelSelection = {
     provider: string;
     model: string;
@@ -28,6 +30,10 @@ type DirectoryState = {
 export declare const name = "dsh-web-ui-promax";
 export declare const inject: string[];
 export declare function apply(ctx: Context): void;
+export declare function isUiEffect(value: unknown): value is UiEffect;
+export declare function applyUiEffect(root: {
+    dataset: DOMStringMap;
+}, effect: UiEffect): void;
 export declare function currentReasoning(state: DirectoryState): {
     selection: ModelSelection;
     reasoning: Reasoning;
