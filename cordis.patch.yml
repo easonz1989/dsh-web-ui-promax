@@ -1,0 +1,11 @@
+# dsh-web-ui-promax is an external bundle. It augments only the declared
+# self-hosted route through Harness's public settings seam and contributes a
+# browser control through the official composer slot; no Harness source patch.
+
+- insert:
+    - id: web-ui-promax
+      name: 'dsh-web-ui-promax'
+      config:
+        provider: deepseek-v4-flash
+        model: deepseek-v4-flash
+        defaultEffort: high
