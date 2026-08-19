@@ -6,7 +6,7 @@ export type { Effort, ModelProfile, ProviderProfile, PromotedProvider } from './
 export declare const name = "dsh-web-ui-promax";
 export declare const inject: string[];
 export declare const UI_SETTINGS_NAMESPACE: import("@deepseek-ai/dsh-settings").SettingsNamespace;
-export declare const UI_EFFECTS: readonly ["ios"];
+export declare const UI_EFFECTS: readonly ["original", "ios"];
 export type UiEffect = (typeof UI_EFFECTS)[number];
 export interface UiSettings {
     uiEffect: UiEffect;

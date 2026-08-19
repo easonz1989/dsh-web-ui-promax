@@ -1,5 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis';
-export declare const UI_EFFECTS: readonly ["ios"];
+export declare const UI_EFFECTS: readonly ["original", "ios"];
 export type UiEffect = (typeof UI_EFFECTS)[number];
 type ModelSelection = {
     provider: string;

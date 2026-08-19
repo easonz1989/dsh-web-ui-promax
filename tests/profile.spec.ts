@@ -38,10 +38,12 @@ describe('dsh-web-ui-promax profile', () => {
 
 describe('UI effects', () => {
   it('exposes the combined Swift Glass and Liquid Glass effect as iOS', () => {
-    expect(plugin.UI_EFFECTS).toEqual(['ios'])
+    expect(plugin.UI_EFFECTS).toEqual(['original', 'ios'])
+    expect(plugin.isUiEffect('original')).toBe(true)
     expect(plugin.isUiEffect('ios')).toBe(true)
     expect(plugin.isUiEffect('swift-glass')).toBe(false)
     expect(plugin.isUiEffect('liquid-glass')).toBe(false)
+    expect(isClientUiEffect('original')).toBe(true)
     expect(isClientUiEffect('ios')).toBe(true)
   })
 
@@ -49,6 +51,8 @@ describe('UI effects', () => {
     const root = { dataset: {} as DOMStringMap }
     applyUiEffect(root, 'ios')
     expect(root.dataset['dshUiEffect']).toBe('ios')
+    applyUiEffect(root, 'original')
+    expect(root.dataset['dshUiEffect']).toBeUndefined()
   })
 })
 

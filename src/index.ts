@@ -12,7 +12,7 @@ export const inject = ['settings', 'connection']
 
 const PI_AI_NAMESPACE = settingsNamespace('llm-pi-ai')
 export const UI_SETTINGS_NAMESPACE = settingsNamespace('web-ui-promax')
-export const UI_EFFECTS = ['ios'] as const
+export const UI_EFFECTS = ['original', 'ios'] as const
 export type UiEffect = (typeof UI_EFFECTS)[number]
 
 export interface UiSettings {
@@ -20,7 +20,7 @@ export interface UiSettings {
 }
 
 export const UI_SETTINGS_SCHEMA: z<UiSettings> = z.object({
-  uiEffect: z.union(UI_EFFECTS).default('ios'),
+  uiEffect: z.union(UI_EFFECTS).default('original'),
 })
 
 export interface Config {
@@ -47,7 +47,7 @@ interface PiAiSettings {
  */
 export function apply(ctx: Context, config: Config): void {
   const uiSettings = ctx.settings.register<UiSettings>(UI_SETTINGS_NAMESPACE, UI_SETTINGS_SCHEMA, {
-    base: { uiEffect: 'ios' },
+    base: { uiEffect: 'original' },
   })
   ctx.connection.rpc.handle(
     '/web-ui-promax',
@@ -56,7 +56,7 @@ export function apply(ctx: Context, config: Config): void {
         if (endpoint === 'get-ui-effect') return ok({ uiEffect: uiSettings.get().uiEffect })
         if (endpoint === 'set-ui-effect') {
           const value = (payload as Record<string, unknown> | undefined)?.uiEffect
-          if (!isUiEffect(value)) return fail('uiEffect must be ios')
+          if (!isUiEffect(value)) return fail('uiEffect must be original or ios')
           await uiSettings.update({ uiEffect: value })
           return ok({ uiEffect: uiSettings.get().uiEffect })
         }
@@ -145,7 +145,7 @@ function fail(message: string): RpcResult<never> {
 }
 
 export function isUiEffect(value: unknown): value is UiEffect {
-  return value === 'ios'
+  return value === 'original' || value === 'ios'
 }
 
 function nonBlank(value: string | undefined, field: string): string {
