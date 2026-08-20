@@ -19,15 +19,14 @@ An external DeepSeek Harness plugin that gives every declared self-hosted model 
   - Off: `thinking: {type: "disabled"}`
   - Medium/High/Max: `thinking: {type: "enabled"}` plus the matching `reasoning_effort`
 
-The plugin does not replace or patch DeepSeek Harness source. It augments the target `llm-pi-ai` profile through the public settings seam and uses the official composer slot and per-session model directory.
+The plugin does not replace or patch DeepSeek Harness source. It augments declared `llm-pi-ai` profiles through the public settings seam and uses the official composer slot and per-session model directory.
 
 ## Configuration
 
 The included bundle defaults to:
 
 ```yaml
-provider: deepseek-v4-flash
-model: deepseek-v4-flash
+providers: []
 defaultEffort: high
 ```
 
