@@ -1,8 +1,8 @@
 import type { Context } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
 import { type Effort } from './profile.ts';
-export { promoteProvider, REASONING_COMPAT, REASONING_EFFORTS } from './profile.ts';
-export type { Effort, ModelProfile, ProviderProfile, PromotedProvider } from './profile.ts';
+export { inferThinkingFormat, promoteAllProviderModels, promoteProvider, REASONING_COMPAT, REASONING_EFFORTS } from './profile.ts';
+export type { Effort, ModelProfile, ProviderProfile, PromotedProvider, ThinkingFormat } from './profile.ts';
 export declare const name = "dsh-web-ui-promax";
 export declare const inject: string[];
 export declare const UI_SETTINGS_NAMESPACE: import("@deepseek-ai/dsh-settings").SettingsNamespace;
@@ -13,8 +13,7 @@ export interface UiSettings {
 }
 export declare const UI_SETTINGS_SCHEMA: z<UiSettings>;
 export interface Config {
-    provider?: string;
-    model?: string;
+    providers?: string[];
     defaultEffort?: Effort;
 }
 export declare const Config: z<Config>;

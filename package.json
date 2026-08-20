@@ -1,7 +1,7 @@
 {
   "name": "dsh-web-ui-promax",
-  "version": "0.2.1",
-  "description": "Reasoning controls and a persistent iOS glass effect for DeepSeek Harness.",
+  "version": "0.3.0",
+  "description": "Dynamic reasoning controls and persistent UI effects for locally hosted DeepSeek Harness models.",
   "license": "MIT",
   "author": "easonz1989 <easonz1989@users.noreply.github.com>",
   "repository": {

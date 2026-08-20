@@ -34,6 +34,37 @@ describe('dsh-web-ui-promax profile', () => {
     expect(plugin.promoteProvider(once.profile, 'm', 'high').changed).toBe(false)
     expect(() => plugin.promoteProvider({ models: [{ id: 'other' }] }, 'm', 'high')).toThrow(/not declared/u)
   })
+
+  it('discovers and promotes every declared local model with its own dialect', () => {
+    const source = {
+      displayName: 'Intense Sight', apiKeyEnv: 'LOCAL_KEY', baseURL: 'https://models.example/v1',
+      models: [
+        { id: 'deepseek-ai/DeepSeek-V4', name: 'DeepSeek' },
+        { id: 'Qwen/Qwen3.8-27B', name: 'Qwen' },
+        { id: 'embedding-only', reasoningEfforts: false },
+      ],
+    }
+    const result = plugin.promoteAllProviderModels(source, 'intensesight', 'high')
+    expect(result.changed).toBe(true)
+    expect(result.profile).toMatchObject({
+      displayName: 'Intense Sight', apiKeyEnv: 'LOCAL_KEY', baseURL: 'https://models.example/v1', reasoning: 'high',
+      models: [
+        { id: 'deepseek-ai/DeepSeek-V4', compat: { thinkingFormat: 'deepseek', supportsReasoningEffort: true }, reasoningEfforts: { off: 'none', medium: 'medium', high: 'high', max: 'max' } },
+        { id: 'Qwen/Qwen3.8-27B', compat: { thinkingFormat: 'qwen', supportsReasoningEffort: true }, reasoningEfforts: { off: null, medium: 'medium', high: 'high', max: 'max' } },
+        { id: 'embedding-only', reasoningEfforts: false },
+      ],
+    })
+    expect(plugin.promoteAllProviderModels(result.profile, 'intensesight', 'high').changed).toBe(false)
+    expect(source.models[0]).not.toHaveProperty('compat')
+  })
+
+  it('preserves explicit provider dialect authority instead of guessing', () => {
+    const result = plugin.promoteAllProviderModels({
+      compat: { thinkingFormat: 'together', supportsReasoningEffort: false },
+      models: [{ id: 'new-model' }],
+    }, 'private', 'high')
+    expect(result.profile.models).toEqual([{ id: 'new-model', reasoningEfforts: { off: null, medium: 'medium', high: 'high', max: 'max' }, compat: {} }])
+  })
 })
 
 describe('UI effects', () => {

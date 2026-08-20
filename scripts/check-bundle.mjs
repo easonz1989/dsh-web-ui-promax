@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 
 const host = await readFile(new URL('../lib/index.js', import.meta.url), 'utf8')
-for (const marker of ['dsh-web-ui-promax', 'llm-pi-ai', 'reasoningEfforts', 'supportsReasoningEffort', 'deepseek', '/web-ui-promax', 'uiEffect', 'original', 'ios']) {
+for (const marker of ['dsh-web-ui-promax', 'llm-pi-ai', 'promoteAllProviderModels', 'settings/updated', 'reasoningEfforts', 'supportsReasoningEffort', 'deepseek', 'qwen', '/web-ui-promax', 'uiEffect', 'original', 'ios']) {
   if (!host.includes(marker)) throw new Error(`host bundle missing required marker: ${marker}`)
 }
 const plugin = await import(new URL('../lib/index.js', import.meta.url))
@@ -15,5 +15,9 @@ for (const marker of ['dsh-web-ui-promax', 'conversation.input.right', 'settings
 }
 for (const forbidden of ['node:fs', 'DEEPSEEK_V4_FLASH_API_KEY', 'apiKey']) {
   if (client.includes(forbidden)) throw new Error(`client bundle leaks server-only marker: ${forbidden}`)
+}
+const patch = await readFile(new URL('../cordis.patch.yml', import.meta.url), 'utf8')
+for (const forbidden of ['provider: deepseek-v4-flash', 'model: deepseek-v4-flash']) {
+  if (patch.includes(forbidden)) throw new Error(`Cordis patch retains hard-coded model target: ${forbidden}`)
 }
 console.log('dsh-web-ui-promax bundle contract: pass')

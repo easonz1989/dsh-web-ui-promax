@@ -2,10 +2,10 @@ import type { Context } from '@deepseek-ai/cordis'
 import { settingsNamespace } from '@deepseek-ai/dsh-settings'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-client-connection'
-import { promoteProvider, type Effort, type ProviderProfile } from './profile.ts'
+import { promoteAllProviderModels, promoteProvider, type Effort, type ProviderProfile } from './profile.ts'
 
-export { promoteProvider, REASONING_COMPAT, REASONING_EFFORTS } from './profile.ts'
-export type { Effort, ModelProfile, ProviderProfile, PromotedProvider } from './profile.ts'
+export { inferThinkingFormat, promoteAllProviderModels, promoteProvider, REASONING_COMPAT, REASONING_EFFORTS } from './profile.ts'
+export type { Effort, ModelProfile, ProviderProfile, PromotedProvider, ThinkingFormat } from './profile.ts'
 
 export const name = 'dsh-web-ui-promax'
 export const inject = ['settings', 'connection']
@@ -24,14 +24,12 @@ export const UI_SETTINGS_SCHEMA: z<UiSettings> = z.object({
 })
 
 export interface Config {
-  provider?: string
-  model?: string
+  providers?: string[]
   defaultEffort?: Effort
 }
 
 export const Config: z<Config> = z.object({
-  provider: z.string().default('deepseek-v4-flash'),
-  model: z.string().default('deepseek-v4-flash'),
+  providers: z.array(z.string()).default([]),
   defaultEffort: z.union(['off', 'medium', 'high', 'max'] as const).default('high'),
 })
 
@@ -69,13 +67,13 @@ export function apply(ctx: Context, config: Config): void {
     { authority: 'trusted-host' },
   )
 
-  const provider = nonBlank(config.provider, 'provider')
-  const model = nonBlank(config.model, 'model')
+  const providerAllowlist = new Set((config.providers ?? []).map(provider => nonBlank(provider, 'providers entry')))
   const defaultEffort = config.defaultEffort ?? 'high'
   let attempts = 0
   let timer: ReturnType<typeof setTimeout> | undefined
 
   const schedule = (delay: number): void => {
+    if (timer !== undefined) return
     timer = setTimeout(() => {
       timer = undefined
       void reconcile().catch(reportFailure)
@@ -84,6 +82,9 @@ export function apply(ctx: Context, config: Config): void {
   ctx.effect(() => () => {
     if (timer !== undefined) clearTimeout(timer)
   }, 'dsh-web-ui-promax: settings reconciliation')
+  ctx.on('settings/updated', (namespace) => {
+    if (namespace === PI_AI_NAMESPACE) schedule(0)
+  })
 
   // Cordis applies sibling loader entries concurrently. The generic adapter
   // owns this namespace and may register it a few ticks after this bundle is
@@ -92,33 +93,33 @@ export function apply(ctx: Context, config: Config): void {
   const reconcile = async (): Promise<void> => {
     attempts += 1
     const current = ctx.settings.get(PI_AI_NAMESPACE) as PiAiSettings | undefined
-    const source = current?.providers?.[provider]
-    if (source === undefined) {
+    const providers = current?.providers
+    if (providers === undefined || Object.keys(providers).length === 0) {
       if (attempts < 150) {
         schedule(100)
       } else {
         ctx.logger.warn(
-          'dsh-web-ui-promax: provider "%s" did not appear in llm-pi-ai settings; leaving Harness operational',
-          provider,
+          'dsh-web-ui-promax: no providers appeared in llm-pi-ai settings; leaving Harness operational',
         )
       }
       return
     }
-    const promoted = promoteProvider(source, model, defaultEffort)
-    if (!promoted.changed) return
-    await ctx.settings.mutate(PI_AI_NAMESPACE, [
-      {
-        op: 'set',
-        path: ['providers', provider, 'reasoning'],
-        value: defaultEffort,
-      },
-      {
-        op: 'set',
-        path: ['providers', provider, 'models'],
-        value: promoted.profile.models,
-      },
-    ])
-    ctx.logger.info('dsh-web-ui-promax: enabled native reasoning controls for %s/%s', provider, model)
+    attempts = 0
+    const operations: Array<{ op: 'set'; path: string[]; value: unknown }> = []
+    const promotedProviders: string[] = []
+    for (const [providerId, source] of Object.entries(providers)) {
+      if (providerAllowlist.size > 0 && !providerAllowlist.has(providerId)) continue
+      const promoted = promoteAllProviderModels(source, providerId, defaultEffort)
+      if (!promoted.changed) continue
+      operations.push(
+        { op: 'set', path: ['providers', providerId, 'reasoning'], value: defaultEffort },
+        { op: 'set', path: ['providers', providerId, 'models'], value: promoted.profile.models },
+      )
+      promotedProviders.push(providerId)
+    }
+    if (operations.length === 0) return
+    await ctx.settings.mutate(PI_AI_NAMESPACE, operations)
+    ctx.logger.info('dsh-web-ui-promax: enabled native reasoning controls for providers: %s', promotedProviders.join(', '))
   }
 
   const reportFailure = (error: unknown): void => {
@@ -148,9 +149,9 @@ export function isUiEffect(value: unknown): value is UiEffect {
   return value === 'original' || value === 'ios'
 }
 
-function nonBlank(value: string | undefined, field: string): string {
-  const normalized = value?.trim()
-  if (normalized === undefined || normalized.length === 0) {
+function nonBlank(value: string, field: string): string {
+  const normalized = value.trim()
+  if (normalized.length === 0) {
     throw new Error(`dsh-web-ui-promax: ${field} must be non-empty`)
   }
   return normalized
